@@ -1,0 +1,1027 @@
+<?php
+$cId = $store->getCId();
+$lan = $store->getLanguage();
+$cssS = ['/common/css/page/store.common.css', '/common/css/page/normal_store.css', '/common/css/jquery.datetimepicker.css','/common/css/page/plugin-uploadimage.css','/common/css/page/blueimp-gallery.min.css','/elements/landing-page/bootstrap-theme.min.css', '/elements/landing-page/bootstrap-theme.min.css'];
+$jsS = [
+  '/common/js/page/store.common.js',
+  '/common/js/plugin-imageZoom.js',
+  '/common/js/qrcode.min.js',
+  '/common/js/jquery.dotdotdot.js',
+  '/common/js/share.js',
+  '/common/js/page/normal_store.js',
+  '/common/js/login.js',
+  // 'https://maps.googleapis.com/maps/api/js?key=AIzaSyANtLadAWxTX0IGPfkkJPjbGG1oP5FujNA&language='.GOOGLE_UI_LANGUAGE[$lan].'&libraries=places',
+  '/common/js/jquery.datetimepicker.full.min.js',
+  '/common/js/plugin-uploadimage.js',
+  '/common/js/plugin-resizeUploadImages.js',
+  '/common/js/jquery.blueimp-gallery.min.js'
+];
+$currentUrl = $actual_link = (isset($_SERVER['HTTPS']) ? "https" : "http") . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
+$previewUrl = 'https://shop.goopter.com/store/preview.php?param='.$store->getIcon();
+//array_push($jsS, 'https://maps.googleapis.com/maps/api/js?key=AIzaSyANtLadAWxTX0IGPfkkJPjbGG1oP5FujNA&language='.GOOGLE_UI_LANGUAGE[$uiLan]);
+$transJS = array(
+  'alert_reward_points',
+  'alert_mutiple_option_product_delete',
+  'alert_check_option',
+  'alert_title',
+  'alert_option_minimum_pick',
+  'alert_option_maximum_pick',
+  'no_description',
+  'no_review',
+  'no_more_review',
+  'empty_cart',
+  'alert_empty_cart',
+  'item(s)',
+  'alert_shipping_address',
+  'not_member',
+  'not_ready',
+  'pick_option',
+  'self_input',
+  'enter_price',
+  'call_vendor',
+  'apply_coupon',
+  'confirm',
+  'login',
+  'register',
+  'cart_is_empty',
+  'alert_exceed_stock',
+  'like',
+  'unlike',
+  'add_to_cart',
+  'alert_choose_menu',
+  'alert_choose_categories',
+  'sold',
+  'sold_out',
+  'stock_only_x_left',
+  'out_of_stock',
+  'option_optional',
+  'option_single_selection',
+  'option_pick',
+  'option_item',
+  'optional',
+  'alert_maximum_option_select',
+  'review_need_signin',
+  'alert_review_succeed',
+  'alert_fail_communicate',
+  'write_a_review',
+  'read_more',
+  'alert_option_mandatory_one',
+  'interested_in',
+  'contact_us_with_time',
+  'alert_email_failed',
+  'alert_email_success',
+  'coupon_removed',
+  'coupon_applied',
+  'invalid_option_selection',
+  'checkout',
+  'extra_delivery_price_needed',
+  'min_delivery_price',
+  );
+
+$transJS = createJsTranslation($trans, $transJS);
+
+$storeFlag = array(
+  'is_login' => isset($_SESSION['accessToken']) && $_SESSION['accessToken']!='',
+  'is_member' => $store->isMember(),
+  'has_payment' => $store->getData('accept_creditcard')||$store->getData('accept_cash')||$store->getData('accept_paylater')||$store->getData('accept_express'),
+  'has_shipping' => !empty($store->getShippingMethods()) && $store->getStoreType()!='travel',
+  'type' => $store->getStoreType(),
+  'phone' => $store->getData('phone'),
+  'coupon' => '',
+  'coupon_pid' => '',
+  'v2p' => $store->getData('v2p'),
+
+  'nm'=>$store->getData('name'),
+  'desc'=>strip_tags($store->getData('description')),
+  'img'=>$store->getIcon(),
+  'imgs'=>$store->getData('images'),
+
+  's_addr' => $store->getAddress(2),
+  's_rating' => round($store->getData('review_level')),
+  'independent_domain' => $individual,
+  'timezone' => $store->getTimezone(),
+  'pagination' => $store->getData('pagination'),
+  'discounts' => $store->getData('discounts'),
+  'min_delivery_amount' => $store->getData('min_delivery_amount'),
+  'delivery_fee' => $store->getData('delivery_fee'), // use this field in store to check if 3rd party shipping enabled. if value is > 1, third party shipping is enabled
+  'show_product_place_holder_image' => $store->getData('show_product_place_holder_image')
+);
+
+$headerParams =
+  array(
+    'metahtml' => '
+      <meta name="title" content="'.htmlspecialchars($store->getData('meta')).'" />
+      <meta name="description" content="'.htmlspecialchars($store->getData('meta_desc')).'" />
+      <meta name="keywords" content="'.htmlspecialchars($store->getData('keywords')).'" />
+      <link rel="stylesheet" href="https://toert.github.io/Isolated-Bootstrap/versions/3.3.7/iso_bootstrap3.3.7min.css">
+      ',
+    'title' => htmlspecialchars($storeFlag['nm']),
+  );
+
+$nickName = '';
+$isLogin = false;
+if (isset($_SESSION['accessToken'])) {
+    $nickName = (isset($_SESSION['nickname']))?$_SESSION['nickname']:$trans->text('anonymous_user');
+    $isLogin = true;
+    $storeFlag['nickname']=$nickName;
+} else {
+    $nickName = $trans->text('login').'/'.$trans->text('register');
+}
+$testLandingPageData = file_get_contents("elements/landing-page/teststorejson_v2.json");
+
+echo createHeader($jsS, $cssS, $headerParams).
+'<body>
+<script type="text/javascript">
+  window.groupId = "'.$groupId.'";
+  window.categoryId = "'.$cId.'";
+  window.uiLan = "'.$uiLan.'";
+  window.language="'.$lan.'";
+  window.googleLan="'.GOOGLE_UI_LANGUAGE[$uiLan].'";
+  window.trans='.json_encode($transJS).';
+  window.store='.json_encode($storeFlag).';
+  window.pdtl_display='.$store->getData('pdtl_display').';
+  window.storeDisplayGid = '.JSON_encode($store->getUrlKey()).';
+  window.individual = '.(int)$individual.';
+  window.$get = '.JSON_encode($_GET, JSON_FORCE_OBJECT).';
+  window.storeType = '.json_encode($store->getStoreType()).';
+  window.TOGGLE_TAB_MAPPING = '.json_encode(TOGGLE_TAB_MAPPING).'
+  if (typeof $data == "undefined") {
+    $data = {};
+  }
+  window.landing_page_data='.json_encode($store->getData('landing_page_data')).';
+  window.use_landing_page='.json_encode($store->getData('use_landing_page')).';
+</script>';
+
+?>
+<style id="hide-google-iframe">
+  iframe[src^="https://apis.google.com"] {
+    display: none;
+  }
+</style>
+<script>
+  var FBObj = {'og:url':'<?=$currentUrl?>','og:titles':'<?=$store->getData('name')?>'};
+  var TWUrl = 'https://twitter.com/intent/tweet?via=goopter&';
+  var GGObjStore = {'contenturl':'<?=$previewUrl?>','cookiepolicy':'single_host_origin','calltoactionurl':'<?=$previewUrl?>','prefilltext':'<?=$store->getData('name')?>(<?=$currentUrl?>)'};
+  var GGObjProduct = {'contenturl':'<?=$currentUrl?>','cookiepolicy':'single_host_origin','calltoactionurl':'<?=$currentUrl?>','prefilltext':'<?=$store->getData('name')?><?=$currentUrl?>'};
+
+  window.___gcfg = {
+    lang: 'en-US',
+    parsetags: 'explicit'
+  };
+
+  window.onLoadCallback = function(){
+    shareGg('share-gg', GGObjStore);
+  }
+</script>
+<!-- <script src="https://apis.google.com/js/client:platform.js?onload=onLoadCallback" async defer></script> -->
+
+  <?php
+    createBanner($trans, $store)
+  ?>
+  
+<!-- <div id="store-tab" data-type="<?=CATEGORIES_MAPPING[$store->getCid()]?>" style="<?= empty($store->getData('himg')) ? '' : "background-image: url(".CLOUDINARY.$store->getData('himg').");"?>">
+  <div class="ui container grid">
+    <div class="twelve wide column">
+      <div class="ui items">
+        <div class="item">
+          <div class="ui small image circular">
+            <a href="/"><img src="<?php echo CLOUDINARY.'/w_250,h_250/'.$store->getData('logo'); ?>" onerror="$(this).closest('.image').remove();"></a>
+          </div>
+          <div class="middle aligned content">
+            <div class="content">
+              <a href="/" id="store-header-name" class="header"><?php echo $store->getData('name'); ?></a>
+              <div class="meta">
+                <div class="ui star rating" data-rating="<?=round($store->getData('review_level'))?>" data-max-rating="5"></div>
+                <button class="ui button write-review" data-action="post_store_review" data-id="<?=$store->getData('group_id')?>" <?=((strpos($_SERVER['SCRIPT_FILENAME'], '/product/') !== false)?'style="display:none"':'') ?>>
+                  <i class="star icon"></i>
+                  <a>
+                      <?=$trans->text('write_a_review')?>
+                  </a>
+                </button>
+              </div>
+              <div id="store-header-address" class="description">
+                <p>
+                  <?php echo $store->getAddress(); ?>
+                </p>
+              </div>
+              <div class="extra" id="store-description">
+                <?php echo strip_tags($store->getData('description')); ?>
+                <a class="store-see-details" href="javascript:seeStoreDesc()" <?=((strpos($_SERVER['SCRIPT_FILENAME'], '/product/') !== false)?'style="display:none"':'') ?>>
+                  <?=$trans->text('read_more')?>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="four wide column">
+      <div class="ui tiny statistics" id="store-option">
+        <div class="statistic" id="store-bookmark" onclick="toggleBookmark()" <?=((isset($_GET['ind']) || strpos($_SERVER['SCRIPT_FILENAME'], '/product/') !== false)?'style="display:none;"':'') ?>>
+          <div class="value">
+            <i class="bookmark icon"></i>
+          </div>
+          <div class="label">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script type="text/javascript">
+$('.rating').rating('disable');
+$(document).ready(function(){
+  $("#store-description").dotdotdot({
+    height: 33,
+    after: '.store-see-details',
+    wrap: 'letter',
+  });
+});
+</script> -->
+
+<div id="switcher">
+  <div class="ui grid container">
+    <div class="sixteen wide column">
+      <div class="ui secondary  menu">
+        <a onclick="toggleTab('home')" class="item home-nav-item <?= ($store->getData('use_landing_page') == 1 && $individual == 1) ? 'active':'' ?>" <?=(($store->getData('use_landing_page') != 1 || !$individual) ? 'style="display:none;"':'')?>>
+          <!-- <?php echo $trans->text('home'); ?> -->
+          <i class="icon home"></i>
+        </a>
+        <a onclick="toggleTab('product')" class="item <?= ($store->getData('use_landing_page') == 1 && $individual == 1) ? '':'active' ?>" id="all-product-switcher" <?=(($store->onePage)?'style="display:none;"':'')?>>
+          <?php echo $trans->text('all_product'); ?>
+        </a>
+        <a class="item <?=(($store->onePage)?'active':'')?>" onclick="toggleTab('store')">
+          <?php echo $trans->text('store_info'); ?>
+        </a>
+        <a class="item" onclick="toggleTab('review')">
+          <?php echo $trans->text('reviews'); ?>
+        </a>
+        <a class="item" onclick="toggleTab('contact')">
+          <?php echo $trans->text('contact_us'); ?>
+        </a>
+        <div class="right menu" <?=(($store->onePage)?'style="display:none;"':'')?>>
+          <div id="sorting-default" class="item sorting active" onclick="handleDefault($(this))">
+            <?=$trans->text('defaultSortText')?>
+            <i class="icon"></i>
+          </div>
+          <div id="sorting-volume" class="item sorting" onclick="handleVolume($(this))">
+            <?=$trans->text('volumeText')?>
+            <i class="caret down icon"></i>
+          </div>
+          <div id="sorting-price" class="item sorting" onclick="handlePrice($(this))">
+            <?=$trans->text('priceText')?>
+            <i class="caret down icon"></i>
+          </div>
+          <div id="sorting-filter" class="item sorting" onclick="handleFilter($(this))">
+            <?=$trans->text('filterText')?>
+            <i class="filter icon"></i>
+          </div>
+          <div class="item" id="change-style-buttons">
+            <div class="ui icon buttons">
+              <button class="ui button active" onclick="toggleStyle('gird')" id="change-style-gird">
+                <i class="grid layout icon"></i>
+              </button>
+              <button class="ui button" onclick="toggleStyle('list')" id="change-style-list">
+                <i class="list layout icon"></i>
+              </button>
+            </div>
+          </div>
+          <div class="item">
+            <div class="ui icon input">
+              <input type="text" placeholder="<?=$trans->text('searchText')?>..." onkeypress="handleSearch();" id="search-input">
+              <i class="search link icon" onclick="handleSearch(true);"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="main-body">
+  <div class="ui grid container">
+    <div class="twelve wide column tab-container">
+      <div class="tab-toggle tab-home" <?=(($store->getData('use_landing_page') != 1 || !$individual) ? 'style="display:none;"':'')?>>
+        <div id="landing-page-container" class="bootstrap">
+
+        </div>
+      </div>
+      <div class="tab-toggle tab-product" <?=(($store->onePage)?'style="display:none;"':'')?> <?=(($store->getData('use_landing_page') == 1 && $individual) ? 'style="display:none;"':'')?>>
+        <div id="cat-buttons" class="ui sticky product-tab-with-cat cu-scrollbar">
+          <?php echo createCatButtons($store);  ?>
+        </div>
+        <div id="cat-section-wrap" class="row product-tab-with-cat">
+          <div class="ui active centered inline loader"></div>
+          <div id="cat-section-content-wrap" hidden>
+            <?php echo createCatSections($store); ?>
+          </div>
+        </div>
+        <div id="product-result-content" class="product-tab-without-cat ui grid sixteen wide column" hidden></div>
+      </div>
+      <div class="tab-toggle tab-store seven wide column" <?=(($store->onePage)?'':'hidden')?>>
+        <h1 class="ui header"><?=$trans->text('store_detail'); ?></h1>
+        <div class="ui divider"></div>
+
+        <div class="ui store-detail">
+          <div id="store-gallery">
+        </div>
+
+        </div>
+        <div class="ui divider"></div>
+
+        <div class="ui grid">
+          <div class="four wide column">
+            <?=$trans->text('review_level'); ?>
+          </div>
+          <div class="twelve wide column">
+            <div class="ui star rating" data-rating="<?=round($store->getData('review_level'))?>" data-max-rating="5"></div>
+            <button class="ui button write-review" data-action="post_store_review" data-id="<?=$groupId?>">
+                <i class="star icon"></i>
+                <a>
+                    <?=$trans->text('write_a_review')?>
+                </a>
+            </button>
+          </div>
+        </div>
+        <div class="ui divider"></div>
+
+        <?php
+          $features = $store->getFeatures();
+          $features_features = $features['features'];
+          $features_goodFor = $features['goodFor'];
+          $features_payment = $features['payment'];
+          $features_parking = $features['parking'];
+
+          $features_features_text = array();
+          foreach ($features_features as $value) {
+              $features_features_text[] = $trans->text($value);
+          }
+
+          $features_goodFor_text = array();
+          foreach ($features_goodFor as $value) {
+              $features_goodFor_text[] = $trans->text($value);
+          }
+
+          $features_payment_text = array();
+          foreach ($features_payment as $value) {
+              if ($value != 'paylater') {
+                  $features_payment_text[] = $trans->text($value);
+              }
+          }
+
+          $features_parking_text = array();
+          foreach ($features_parking as $value) {
+              $features_parking_text[] = $trans->text($value);
+          }
+        ?>
+
+        <?php if ($cId != 3 && count($features_features_text)!=0): ?>
+        <div class="ui grid">
+          <div class="four wide column">
+            <?=$trans->text('features'); ?>
+          </div>
+          <div class="twelve wide column">
+            <?=implode(', ', $features_features_text);?>
+          </div>
+        </div>
+        <div class="ui divider"></div>
+        <?php endif; ?>
+
+        <?php if (!in_array($cId, [3,4,5]) && count($features_goodFor_text)!=0):?>
+        <div class="ui grid">
+          <div class="four wide column">
+            <?=$trans->text('good_for'); ?>
+          </div>
+          <div class="twelve wide column">
+            <?=implode(', ', $features_goodFor_text);?>
+          </div>
+        </div>
+        <div class="ui divider"></div>
+        <?php endif; ?>
+
+        <?php if (count($features_payment_text)!=0): ?>
+        <div class="ui grid">
+          <div class="four wide column">
+            <?=$trans->text('payment'); ?>
+          </div>
+          <div class="twelve wide column">
+            <?=implode(', ', $features_payment_text);?>
+          </div>
+        </div>
+        <div class="ui divider"></div>
+        <?php endif; ?>
+
+        <?php if (count($features_parking_text)!=0): ?>
+        <div class="ui grid">
+          <div class="four wide column">
+            <?=$trans->text('parking'); ?>
+          </div>
+          <div class="twelve wide column">
+            <?=implode(', ', $features_parking_text);?>
+          </div>
+        </div>
+        <div class="ui divider"></div>
+        <?php endif; ?>
+
+        <div class="ui grid">
+          <div class="four wide column">
+            <?=$trans->text('store_open_hours'); ?>
+          </div>
+          <div class="twelve wide column">
+            <?=generateHourDropdown('open', $store, $trans)?>
+          </div>
+        </div>
+        <div class="ui divider"></div>
+      <?php if ($cId==5 && !$store->getData('eatin') && !$store->getData('takeout') && !$store->getData('delivery')): ?>
+        <!--
+          #when service store is set to no shipping required(all shipping flag is 0), then remove Delivery hours from store detail section
+          # do not use break;
+        -->
+      <?php elseif ($cId!=3 && ($store->getData('delivery') == 1)): ?>
+        <div class="ui grid">
+          <div class="four wide column">
+            <?=$trans->text('store_delivery_hours'); ?>
+          </div>
+          <div class="twelve wide column">
+            <?php
+              $storeHours = $store->getData('delivery_hours');
+              echo '<div class="ui grid hours-display">';
+              if ($store->alwaysDeliver()) {
+                echo '
+                  <div class="four wide column">
+                  '.$trans->text('store_always_deliver').'
+                  </div>';
+              } else {
+                foreach ($storeHours as $key => $value) {
+                  echo '
+                    <div class="four wide column">
+                    '.$trans->text(strtolower($key)).'
+                    </div>
+                    <div class="twelve wide column grid">
+                    '.$value.'
+                    </div>';
+                }
+              }
+              echo '</div>';
+            ?>
+          </div>
+        </div>
+        <div class="ui divider"></div>
+      <?php endif; ?>
+
+        <div class="ui">
+          <h3 class="ui header"><?=$trans->text('location_and_contact_info')?></h3>
+          <p>
+            <?=$trans->text('address').': '.$store->getAddress(2)?><br>
+            <?=$trans->text('phone')?>: <span class="phone-formater"><?=$store->getData('phone')?></span><br>
+          </p>
+        </div>
+        <div class="ui divider"></div>
+
+        <div class="ui">
+          <h3 class="ui header"><?=$trans->text('store_description')?></h3>
+          <p>
+            <?=$store->getData('description')?>
+          </p>
+        </div>
+
+      </div>
+      <div hidden class="tab-toggle tab-review">
+          <div class="ui comments comment-list" id="comment-list">
+            <div style='opacity: 0; height: 1px;'>review</div>
+          </div>
+          <div id="paging" class="cu-pagination review-pagination">
+          
+          </div>
+        </div>
+
+      <?php echo createContactUsContent($trans); ?>
+
+      <div hidden class="tab-toggle tab-search">
+        <h2 class="ui header" id="search-result-header"><?=$trans->text('search_result')?>: <span id="search-result-text"></span></h2>
+        <div class="ui grid cat-section">
+          <div id="search-result-content" class="ui grid sixteen wide column cat-section-content">
+
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="announcement-section-wrap" class="four wide column">
+      <div id="store-info-map-wrap" class="four wide column">
+        <div class="store-info-map-section ui segment">
+          <div id="store-map" onclick="window.open('<?='http://maps.google.com/maps?&z=15&q='.$store->getAddress(2)?>')">
+            <!-- 'http://maps.google.com/maps?&z=15&q='.urlencode($store->getData('name')." ".$store->getAddress(2)) -->
+          </div>
+        </div>
+        <div class="store-info-map-section ui segment">
+          <p><?=$store->getAddress(0)?></p>
+          <p><i class="phone icon"></i><span class="phone-formater phone-value"><?=$store->getData('phone')?></span></p>
+          <p <?= $store->getData('website_url') ? '':'hidden';?> style="display: flex;"><i class="home icon"></i><a class="link-redirect cu-text-ellipsis" link="<?=$store->getData('website_url')?>"><?=$store->getData('website_url')?></a></p>
+        </div>
+        <div class="store-info-map-section ui segment">
+          <span class="clock-icon"></span><?=generateHourDropdown('open', $store, $trans)?>
+        </div>
+        <div class="store-info-map-section ui segment">
+          <a href="javascript:seeStoreDesc()"><?=$trans->text('more_info')?></a>
+        </div>
+      </div>
+      <?php echo createAnnouncement($store, $trans);  ?>
+
+    </div>
+
+  </div>
+</div>
+
+<div class="ui modal" id="store-gallery-full">
+  <div class="store-gallery-full-img"></div>
+  <div class="store-gallery-carousel">
+
+</div>
+</div>
+
+<div class="shop-cart" <?=(($store->onePage)?'style="display:none;"':'')?>>
+  <div class="shop-cartcontainer">
+    <div class="ui blue segment">
+      <div>
+        <div>
+          <span><?=$trans->text('shopping_cart')?></span>
+          <a onclick="emptyCart()">[<?=$trans->text('empty_cart')?>]</a>
+        </div>
+      </div>
+    </div>
+    <?php echo createShipping($store, $trans); ?>
+    <div class="shop-cartcontent cu-scrollbar" id="cart-list"></div>
+  </div>
+</div>
+
+<div class="shop-cartfooter" <?=(($store->onePage)?'style="display:none;"':'')?>>
+    <div class="shop-clickable">
+      <span class="shop-carticon">
+        <i class="shop icon"></i>
+        <span class="shop-cart-count" style="display: none;"></span>
+      </span>
+    <p class="shop-cartprice" id="btn-cart"><?=$trans->text('empty_cart')?></p>
+    </div>
+  <span class="shop-cartfooter-checkout disabled" id="btn-checkout" onclick="checkout()"><?=$trans->text('checkout')?></span>
+</div>
+
+<!-- normal product, gift card, and call vendor modal -->
+<div class="ui modal main-modal" id="modal-no-option">
+  <i class="remove icon"></i>
+  <div class="image content">
+    <div class="modal-img" id="modal-no-option-img">
+    </div>
+    <div class="description">
+      <div class="ui grid">
+        <div class="sixteen wide column modal-name cu-text-ellipsis-2" id="modal-no-option-name">
+          <?=$trans->text('name')?>
+        </div>
+        <div class="sixteen wide column" id="modal-no-option-custom-wrap">
+          <div class="ui grid normal-product">
+            <div class="four wide column modal-price product-price" id="modal-no-option-price">
+              <?=$trans->text('price')?>
+            </div>
+            <div id="modal-no-option-button-wrap" class="twelve wide column modal-button-wrap">
+              <button id="btn-modal-remove-no-option" class="ui icon button" style="display: none;"></button>
+              <span id="item-count-modal-no-option"></span>
+              <button id="btn-modal-add-no-option" class="ui icon button" style="display: none;"></button>
+              <button id="btn-modal-add-no-option-initial" class="ui button button-holder"><?=$trans->text('add_to_cart')?></button>
+            </div>
+          </div>
+          <div class="ui grid call-vendor-product" hidden>
+            <div class="eight wide column" id="modal-no-option-phone">
+              <?=$trans->text('phone')?>
+            </div>
+            <div id="modal-no-option-call-vendor-wrap" class="eight wide column">
+              <button class="ui right labeled icon button button-holder call-vendor-button" onclick="callVendor()"><i class="call icon"></i><?=$trans->text('call_vendor')?></button>
+            </div>
+          </div>
+        </div>
+        <div class="ui top attached tabular menu" style="padding-left:0;">
+          <a class="item active" data-tab="first"><?=$trans->text('description')?></a>
+          <a class="item" data-tab="second"><?=$trans->text('review')?></a>
+        </div>
+        <div class="ui bottom attached tab segment active cu-scrollbar" data-tab="first">
+          <div id="modal-no-option-desc" class="sixteen wide column modal-desc">
+            <?=$trans->text('description')?>
+          </div>
+        </div>
+        <div class="ui bottom attached tab segment" data-tab="second">
+          <h4 class="ui header modal-header"><?=$trans->text('comment')?></h4>
+          <div id="modal-no-option-comment" class="sixteen wide column comment-list modal-comment cu-scrollbar">
+            <?=$trans->text('comment')?>
+          </div>
+          <div class="comment-pagination"></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="actions withads">
+  <?=createSocialShareBtn('sharegg-noopt', $trans)?>
+  <?php if ($store->isShowAd()): ?>
+    <div class="ui ad center" data-selectedstyle="horizontal-medium-468x15">
+    </div>
+  <?php endif; ?>
+  </div>
+</div>
+
+<!-- option product modal -->
+<div class="ui modal main-modal" id="modal-with-option">
+  <i class="remove icon"></i>
+  <div class="image content">
+    <div class="modal-img" id="modal-option-img">
+    </div>
+    <div class="description">
+      <div class="ui grid">
+        <div class="sixteen wide column modal-name cu-text-ellipsis-2" id="modal-option-name">
+          <?=$trans->text('name')?>
+        </div>
+        <div class="sixteen wide column">
+          <div class="ui grid">
+            <div class="four wide column modal-price product-price" id="modal-option-price">
+              <?=$trans->text('price')?>
+            </div>
+            <div id="modal-option-button-wrap" class="twelve wide column modal-button-wrap">
+              <button id="btn-modal-remove-option" class="ui icon button" style="display: none;"></button>
+              <span id="item-count-modal-option" class="item-count"></span>
+              <button id="btn-modal-add-option" class="ui icon button" style="display: none;"></button>
+              <button id="btn-modal-add-option-initial" class="ui button button-holder"><?=$trans->text('add_to_cart')?></button>
+            </div>
+          </div>
+        </div>
+
+        <div class="ui top attached tabular menu" style="padding-left:0;">
+          <a class="item active" data-tab="first"><?=$trans->text('description')?></a>
+          <a class="item" data-tab="second"><?=$trans->text('review')?></a>
+        </div>
+        <div class="ui bottom attached tab segment active cu-scrollbar" data-tab="first">
+          <div id="modal-option-desc" class="sixteen wide column modal-desc">
+            <?=$trans->text('description')?>
+          </div>
+        </div>
+        <div class="ui bottom attached tab segment" data-tab="second">
+          <h4 class="ui header modal-header"><?=$trans->text('comment')?></h4>
+          <div id="modal-option-comment" class="sixteen wide column comment-list modal-comment cu-scrollbar">
+            <?=$trans->text('comment')?>
+          </div>
+          <div class="comment-pagination"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="actions withads">
+  <?=createSocialShareBtn('sharegg-opt', $trans)?>
+  <?php if ($store->isShowAd()): ?>
+    <div class="ui ad center" data-selectedstyle="horizontal-medium-468x15">
+    </div>
+  <?php endif; ?>
+  </div>
+</div>
+
+<!-- coupon modal -->
+<div class="ui modal main-modal" id="modal-with-coupon">
+  <i class="remove icon"></i>
+  <div class="image content">
+    <div class="modal-img" id="modal-coupon-img">
+    </div>
+    <div class="description">
+      <div class="ui grid">
+        <div class="sixteen wide column modal-name cu-text-ellipsis-2" id="modal-coupon-name">
+          <?=$trans->text('name')?>
+        </div>
+        <div class="sixteen wide column">
+          <div class="ui grid">
+            <div class="four wide column modal-price product-price" id="modal-coupon-price">
+              <?=$trans->text('price')?>
+            </div>
+            <div id="modal-coupon-button-wrap" class="twelve wide column modal-button-wrap">
+              <button class="ui right labeled icon button apply-coupon-button button-holder"><i class="tag icon"></i><?=$trans->text('apply_coupon')?></button>
+            </div>
+          </div>
+        </div>
+
+        <div id="modal-coupon-desc" class="sixteen wide column modal-desc cu-scrollbar">
+          <?=$trans->text('description')?>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="actions">
+  <?=createSocialShareBtn('sharegg-coupon', $trans)?>
+  </div>
+</div>
+
+<!-- seft input modal -->
+<div class="ui modal main-modal" id="modal-with-selfinput">
+  <i class="remove icon"></i>
+  <div class="image content">
+    <div class="modal-img" id="modal-selfinput-img">
+    </div>
+    <div class="description">
+      <div class="ui grid">
+        <div class="sixteen wide column modal-name cu-text-ellipsis-2" id="modal-selfinput-name">
+          name
+        </div>
+
+        <div class="ui grid">
+          <div class="eight wide column modal-price product-price" id="modal-selfinput-price">
+            <div class="ui labeled input">
+              <div class="ui label">
+                $
+              </div>
+              <input id="selfinput-input" type="number" placeholder="0" oninput="selfinputChange()">
+            </div>
+          </div>
+          <div id="modal-selfinput-button-wrap" class="eight wide column modal-button-wrap">
+            <button class="ui icon button button-holder" onclick="selfinputConfirm()"><?=$trans->text('confirm')?></button>
+          </div>
+        </div>
+
+        <div id="modal-selfinput-desc" class="sixteen wide column modal-desc cu-scrollbar">
+          <?=$trans->text('description')?>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="actions">
+  <?=createSocialShareBtn('sharegg-self', $trans)?>
+  </div>
+</div>
+
+<div class="ui modal main-modal" id="modal-option-picker">
+  <div class="header"></div>
+  <div class="content cu-scrollbar">
+    <div id="option-list"></div>
+  </div>
+  <div class="actions">
+    <div id="option-button-wrap">
+      <button type="button" class="ui icon button" id="btn-remove-with-option" onclick="removeWithOption()"></button>
+      <p id="option-picker-count"></p>
+      <button type="button" class="ui icon button" id="btn-add-with-option" onclick="addWithOption()"></button>
+      <button class="ui button button-holder" id="btn-add-with-option-initial" onclick="addWithOption()"><?=$trans->text('add_to_cart')?></button>
+    </div>
+  </div>
+</div>
+
+<div class="ui modal" id="store-filter-modal">
+  <div class="header">
+    <?=$trans->text('filterText')?>
+    <span class="cu-modal-close-icon"></span>
+  </div>
+  <div class="content cu-scrollbar">
+    <form id="filter-form">
+    <div class="ui form">
+      <div class="ui accordion">
+        <div class="title active">
+          <i class="dropdown icon"></i>
+          <span class="filter-header"><?=$trans->text('price_range')?></span>
+        </div>
+        <div class="content active">
+          <div class="transition visiable">
+            <div class="inline fields">
+              <div class="sixteen wide field">
+                <div class="cu-input" id='filter-price-slider'>
+                </div>
+                <input type="text" placeholder="0.00" class="cu-input" id="filter-price-min">
+                <label>&nbsp&nbsp-&nbsp&nbsp</label>
+                <input type="text" placeholder="2000.00" class="cu-input" id="filter-price-max">
+                ($)
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="title">
+          <i class="dropdown icon"></i>
+          <span class="filter-header"><?=$trans->text('field_display_setting')?></span>
+        </div>
+        <div class="content">
+          <div class="transition">
+            <div  style="display:flex;flex-wrap:wrap;">
+              <div class="inline field" style="width:50% !important;">
+                <div class="ui checkbox checked">
+                  <input type="checkbox" tabindex="0" class="hidden" checked="checked" id="filter-show-selfinput">
+                  <label><?=$trans->text('show_self_input')?></label>
+                </div>
+                <label></label>
+              </div>
+
+              <div class="inline field" style="width:50% !important;">
+                <div class="ui checkbox checked">
+                  <input type="checkbox" tabindex="0" class="hidden" checked="checked" id="filter-show-callvendor">
+                  <label><?=$trans->text('show_call_vendor')?></label>
+                </div>
+                <label></label>
+              </div>
+
+              <div class="inline field" style="width:50% !important;">
+                <div class="ui checkbox checked">
+                  <input type="checkbox" tabindex="0" class="hidden" checked="checked" id="filter-show-coupon">
+                  <label><?=$trans->text('show_coupon')?></label>
+                </div>
+                <label></label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="title">
+          <i class="dropdown icon"></i>
+          <span class="filter-header"><?=$trans->text('category_setting')?></span>
+        </div>
+        <div class="content">
+          <div class="transition visiable">
+            <div class="inline field">
+              <div class="ui checkbox checked">
+                <input type="checkbox" id="group-by-categories" checked="checked">
+                <label><?=$trans->text('group_by_categories')?></label>
+              </div>
+            </div>
+            <div class="filter-menu-dropdown">
+            <?=createFilterMenuDropdown($store, $trans)?>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    </form>
+  </div>
+  <div class="actions">
+    <div class="ui cancel button"><?=$trans->text('cancel')?></div>
+    <div class="ui approve button"><?=$trans->text('confirm')?></div>
+  </div>
+</div>
+
+<?=createPostReviewModal($trans)?>
+<form id="form-checkout" method="post" action="/checkout/">
+  <input type="hidden" name="gid" value="<?=$groupId?>" id="input-gid">
+  <input type="hidden" name="cart" value="" id="input-cart">
+  <input type="hidden" name="shipping" value="" id="input-shipping">
+  <input type="hidden" name="coupon" value="" id="input-coupon">
+</form>
+<div class="share-button-elevator elevator">
+  <?=createSocialShareBtn('share-gg', $trans)?>
+  <!-- createSocialShareBtnElevator() -->
+  <button class="ui icon button" id="back-to-top">
+    <i class="angle double up icon"></i>
+  </button>
+</div>
+
+<?=createShareByEmailModal($trans)?>
+<?=createFooter($trans)?>
+</body>
+
+<?php
+// =========================== functions =====================
+function createCatButtons($store)
+{
+    $result = '';
+    $firstActive = 'active';
+  //$lan = $store->getLanguage();
+  $cats = $store->getCategories();
+    foreach ($cats as $cat) {
+        if (!$cat['c_cnt']) {
+            continue;
+        }
+        if (isset($cat['menus'])) {
+            $class = 'menu-button';
+            foreach ($cat['menus'] as $menu) {
+                $class.= ' menu-'.$menu;
+            }
+            $result .= '<button id="cat-'.$cat['id'].'-button" class="ui blue tiny basic button cat-button '.$firstActive.'"><a href="#cat-'.$cat['id'].'" class="'.$class.'">'.$cat['name'].'</a></button>';
+        } else {
+            $result .= '<button id="cat-'.$cat['id'].'-button" class="ui blue tiny basic button cat-button '.$firstActive.'"><a href="#cat-'.$cat['id'].'" class="menu-button">'.$cat['name'].'</a></button>';
+        }
+        $firstActive = '';
+    }
+    return $result;
+}
+
+function createCatSections($store)
+{
+    $result = '';
+  //$lan = $store->getLanguage();
+  $cats = $store->getCategories();
+    foreach ($cats as $cat) {
+        if (!$cat['c_cnt']) {
+            continue;
+        }
+        $currentMenusClass = '';
+        if (isset($cat['menus'])) {
+            foreach ($cat['menus'] as $currentCatMenu) {
+                $currentMenusClass .= ' cat-section-'.$currentCatMenu;
+            }
+        }
+        $result .= '
+    <div class="ui grid cat-section '.$currentMenusClass.'">
+      <div class="sixteen wide column cat-section-title" id="cat-title-'.$cat['id'].'">
+        <p>'.$cat['name'].'</p>
+      </div>
+      <div class="ui grid sixteen wide column cu-flex cat-section-content" id="cat-'.$cat['id'].'">
+      </div>
+    </div>
+    ';
+    }
+    return $result;
+}
+
+function createFilterMenuDropdown($store, $trans)
+{
+    $menuResult = '';
+    $catResult = '';
+    $multiMenu = false;
+    $menuIds = $store->getData('menu_ids');
+    if (!$menuIds||$menuIds[0]=='') {
+        $multiMenu = false;
+    } else {
+        $multiMenu = true;
+    }
+    if ($multiMenu) {
+        $menuArray = [];
+        $menuResult='<div class="inline fields">
+      <div class="ui fluid selection dropdown cu-input">
+        <input type="hidden" name="select-menu" id="select-menu">
+        <i class="dropdown icon"></i>
+        <div class="default text">'.$trans->text('choose_menu').'</div>
+        <div class="menu">
+          ';
+        foreach ($menuIds as $menuId) {
+            $menuResult .= '
+      <div class="item filter-menu-item" data-value="'.$menuId.'">
+        '.$trans->text('menu-'.$menuId).'
+      </div>';
+
+            $currentCat = $store->getCategories($menuId);
+            if (count($currentCat)!=0) {
+                $catResult.='
+        <div class="ui celled relaxed list cat-menu cat-menu-'.$menuId.'" hidden>
+          <div class="item">
+            <div class="ui master checkbox">
+              <input type="checkbox" class="cat-menu-all">
+              <label>'.$trans->text('all_categories').'</label>
+            </div>
+            <div class="list">';
+                foreach ($currentCat as $catInfo) {
+                    if ($catInfo['c_cnt']!=0) {
+                        $menuArray[$menuId][] = $catInfo['id'];
+                        $catResult .= '
+            <div class="item">
+              <div class="ui child checkbox">
+                <input type="checkbox" tabindex="'.$catInfo['id'].'" class="hidden">
+              <label>'.$catInfo['name'].'</label>
+              </div>
+            </div>';
+                    }
+                }
+                $catResult .= '
+            </div>
+          </div>
+        </div>';
+            }
+        }
+
+        $menuResult .= '</div></div></div>';
+
+    //echo '<script>store.menus = '.json_encode($menuArray).'</script>';
+    } else {
+        $allCats = $store->getCategories();
+        $tempAllCats = [];
+        foreach ($allCats as $currentAllCat) {
+            if ($currentAllCat['c_cnt']>0) {
+                $tempAllCats[] = $currentAllCat['id'];
+            }
+        }
+        echo '<script>store.filter_current_cats = '.json_encode($tempAllCats).'</script>';
+
+        if (count($allCats)!=0) {
+            $catResult.='
+      <div class="ui celled relaxed list cat-menu" >
+        <div class="item">
+          <div class="ui master checkbox">
+            <input type="checkbox" class="cat-menu-all">
+            <label>'.$trans->text('all_categories').'</label>
+          </div>
+          <div class="list">';
+            foreach ($allCats as $catInfo) {
+                if ($catInfo['c_cnt']!=0) {
+                    $catResult .= '
+          <div class="item">
+            <div class="ui child checkbox">
+              <input type="checkbox" tabindex="'.$catInfo['id'].'" class="hidden">
+            <label>'.$catInfo['name'].'</label>
+            </div>
+          </div>';
+                }
+            }
+            $catResult .= '
+          </div>
+        </div>
+      </div>';
+        }
+    }
+    return $menuResult.$catResult;
+}
+?>

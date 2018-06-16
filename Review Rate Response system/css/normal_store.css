@@ -1,0 +1,30 @@
+#main-body {
+    /*min-height: 80vw;*/
+    background-color: #f7f7f7;
+  }
+  
+  .cu-pagination.review-pagination .rwlst-paging.hidden-paging{
+    display: none !important
+  }
+  
+  
+  #modal-post-review{
+    min-height: 850px;
+    min-width: 20%;
+  }
+  
+  .modal_review_option{
+    font-size:16px;
+    color:rgb(25, 25, 26);
+  }
+  
+  #modal-post-review .img_upload_area{
+    margin-top:4%;
+    display:flex;
+    flex-wrap: wrap;
+  }
+
+  #modal-post-review .img-box{
+    margin-top:10px;
+    margin-left:10px;
+  }
